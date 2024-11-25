@@ -352,6 +352,12 @@ public class ArbolController {
         }
     }
 
+    public void actualizarUsuarioActual(Usuario nuevoUsuario) {
+        this.usuarioActual = nuevoUsuario;
+        mostrarMensaje("Usuario actual actualizado a: " + nuevoUsuario.getNombreCompleto());
+    }
+
+
     public void enviarCorreo(Usuario destinatario, String mensaje) {
         if (destinatario == null) {
             mostrarMensaje("Destinatario no válido.");

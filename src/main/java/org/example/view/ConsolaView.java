@@ -653,7 +653,7 @@ public class ConsolaView {
             int selectedIndex = listViewUsuarios.getSelectionModel().getSelectedIndex();
             if (selectedIndex >= 0) {
                 Usuario seleccionado = usuariosRaiz.get(selectedIndex);
-                controller.setUsuarioActual(seleccionado); // Asignar el usuario seleccionado al controlador
+                controller.actualizarUsuarioActual(seleccionado);
                 mostrarMensaje("Usuario actual: " + seleccionado.getNombreCompleto());
                 stage.close();
             } else {

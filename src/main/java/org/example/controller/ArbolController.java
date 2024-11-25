@@ -5,9 +5,7 @@ import org.example.model.ArbolGenealogico;
 import org.example.model.Usuario;
 import org.example.view.ConsolaView;
 
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.List;
+import java.util.*;
 
 public class ArbolController {
     private ArbolGenealogico arbolGenealogico;
@@ -31,9 +29,8 @@ public class ArbolController {
         mostrarMensaje("Usuario raíz agregado exitosamente.");
     }
 
-    // Cambié el tipo de retorno a List<Usuario>
     public List<Usuario> obtenerUsuariosRaiz() {
-        return arbolGenealogico.getRaices().toList(); // Convertimos a List<Usuario>
+        return arbolGenealogico.getRaices().toList();
     }
 
     public void agregarPadre(int usuarioId, Usuario padre) {
@@ -122,30 +119,37 @@ public class ArbolController {
         if (usuarioRaiz == null || nombre == null || nombre.isBlank()) {
             return "Datos inválidos para la búsqueda.";
         }
-        return buscarParentescoRecursivo(usuarioRaiz, nombre, 0)
+        return buscarParentescoRecursivo(usuarioRaiz, nombre, 0, new HashSet<>())
                 .orElse("No se encontró parentesco con el usuario especificado.");
     }
 
-    private Optional<String> buscarParentescoRecursivo(Usuario usuario, String nombre, int nivel) {
-        if (usuario == null) return Optional.empty();
+    private Optional<String> buscarParentescoRecursivo(Usuario usuario, String nombre, int nivel, Set<Usuario> visitados) {
+        if (usuario == null || visitados.contains(usuario)) return Optional.empty();
 
+        // Marca al usuario como visitado
+        visitados.add(usuario);
+
+        // Si encontramos el usuario, devolvemos el nivel actual
         if (usuario.getNombreCompleto().equalsIgnoreCase(nombre)) {
             return Optional.of("Nivel " + nivel);
         }
 
-        Optional<String> resultado = buscarParentescoRecursivo(usuario.getPadre(), nombre, nivel + 1);
+        // Busca recursivamente en los padres
+        Optional<String> resultado = buscarParentescoRecursivo(usuario.getPadre(), nombre, nivel + 1, visitados);
         if (resultado.isPresent()) return resultado;
 
-        resultado = buscarParentescoRecursivo(usuario.getMadre(), nombre, nivel + 1);
+        resultado = buscarParentescoRecursivo(usuario.getMadre(), nombre, nivel + 1, visitados);
         if (resultado.isPresent()) return resultado;
 
+        // Busca recursivamente en los hijos
         for (Usuario hijo : usuario.getHijos()) {
-            resultado = buscarParentescoRecursivo(hijo, nombre, nivel + 1);
+            resultado = buscarParentescoRecursivo(hijo, nombre, nivel + 1, visitados);
             if (resultado.isPresent()) return resultado;
         }
 
         return Optional.empty();
     }
+
 
     private List<Usuario> obtenerUsuariosPendientes(Usuario usuario, List<Usuario> pendientes) {
         if (usuario == null) return pendientes;

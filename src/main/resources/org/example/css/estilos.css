@@ -1,0 +1,147 @@
+
+/* Botones */
+.button {
+    -fx-background-color: #FF6F61; /* Coral */
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-padding: 12px 24px;
+    -fx-background-radius: 20px; /* Bordes redondeados */
+    -fx-border-color: #FFB7A2; /* Borde sutil */
+    -fx-border-width: 1px;
+    -fx-transition: background-color 0.3s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.button:hover {
+    -fx-background-color: #FF8577; /* Coral más brillante */
+    -fx-cursor: hand; /* Efecto de puntero al pasar por encima */
+}
+
+.button:pressed {
+    -fx-background-color: #E05B4F; /* Coral oscuro */
+}
+
+/* Etiquetas */
+.label {
+    -fx-text-fill: #E05B4F; /* Coral oscuro */
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+
+/* Nodo Persona */
+.nodo-persona {
+    -fx-border-color: #FFC3A0; /* Bordes cálidos */
+    -fx-border-width: 1.5px;
+    -fx-padding: 10;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 5, 0, 0, 2);
+    -fx-transition: transform 0.2s ease-in-out, background-color 0.3s ease-in-out;
+    -fx-background-color: #FFDDCA; /* Fondo coral claro */
+}
+
+.nodo-persona:hover {
+    -fx-background-color: #FFB7A2; /* Fondo más oscuro */
+}
+
+.nodo-raiz {
+    -fx-background-color: #FF6F61; /* Coral más intenso */
+}
+
+.linea-conexion {
+    -fx-stroke: #FFB7A2; /* Coral suave */
+    -fx-stroke-width: 2;
+    -fx-stroke-dash-array: 4 4; /* Líneas punteadas */
+}
+
+/* Ventanas emergentes */
+.dialog-pane {
+    -fx-background-color: #FFF5F3; /* Fondo cálido */
+    -fx-border-color: #FFC3A0;
+    -fx-border-width: 2px;
+    -fx-border-radius: 10px;
+}
+
+/* Elementos de entrada (TextField, DatePicker, etc.) */
+.text-field, .date-picker {
+    -fx-background-color: #FFF1EB; /* Fondo suave */
+    -fx-text-fill: #333; /* Texto oscuro */
+    -fx-border-color: #FFB7A2;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1.5px;
+    -fx-padding: 5px 10px;
+    -fx-transition: border-color 0.2s ease-in-out;
+}
+
+.text-field:focused, .date-picker:focused {
+    -fx-border-color: #FF8577; /* Coral brillante */
+    -fx-border-width: 2px;
+}
+
+/* Spinner */
+.spinner {
+    -fx-border-color: #FFB7A2;
+    -fx-border-radius: 5px;
+}
+
+/* Títulos */
+.title {
+    -fx-font-size: 18px;
+    -fx-text-fill: #FF6F61; /* Coral */
+    -fx-font-weight: bold;
+    -fx-padding: 5px;
+}
+
+/* ListView */
+.list-view {
+    -fx-background-color: #FFF5F3;
+    -fx-border-color: #FFC3A0;
+    -fx-border-width: 1px;
+    -fx-padding: 5px;
+}
+
+.list-view .list-cell {
+    -fx-background-color: #FFF1EB; /* Fondo de las celdas */
+    -fx-text-fill: #333;
+}
+
+.list-view .list-cell:hover {
+    -fx-background-color: #FFDDCA; /* Efecto al pasar por encima */
+}
+
+/* Botones de selección */
+.radio-button, .check-box {
+    -fx-text-fill: #E05B4F; /* Coral oscuro */
+}
+
+.radio-button:selected, .check-box:selected {
+    -fx-text-fill: #FF6F61;
+}
+
+/* ScrollBars */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #FFB7A2; /* Coral suave */
+    -fx-background-radius: 5px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #FF8577; /* Coral brillante */
+}
+
+/* Botón Volver */
+.boton-volver {
+    -fx-background-color: #FFDDCA; /* Fondo suave */
+    -fx-text-fill: #333; /* Texto oscuro */
+    -fx-font-size: 12px;
+    -fx-padding: 5px 10px;
+    -fx-background-radius: 5px; /* Bordes redondeados */
+    -fx-border-color: #FFB7A2; /* Borde suave */
+    -fx-border-width: 1px;
+    -fx-transition: background-color 0.2s ease-in-out;
+}
+
+.boton-volver:hover {
+    -fx-background-color: #FFB7A2; /* Fondo más oscuro al pasar por encima */
+}

@@ -8,11 +8,13 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import org.example.model.Correo;
 import org.example.model.Usuario;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 public class ConsolaView {
     private ArbolController controller;
     private Stage primaryStage;
@@ -25,15 +27,17 @@ public class ConsolaView {
     }
 
     private void mostrarMenu() {
+        // Crear botones del menú
         Button btnCrearUsuario = new Button("Crear usuario raíz");
         Button btnAgregarFamiliar = new Button("Agregar familiar a un usuario raíz");
         Button btnEditarFamiliar = new Button("Editar familiar");
         Button btnMostrarArbol = new Button("Mostrar árbol genealógico de un usuario raíz");
-        Button btnListarPendientes = new Button("Listar familiares pendientes de confirmación");
         Button btnListarFamiliares = new Button("Listar familiares por generación y edad");
         Button btnBuscarParentesco = new Button("Buscar parentesco por nombre");
+        Button btnCasillaCorreo = new Button("Casilla de Correo");
         Button btnSalir = new Button("Salir");
 
+        // Asignar acciones a los botones
         btnCrearUsuario.setOnAction(e -> crearUsuarioRaiz());
         btnAgregarFamiliar.setOnAction(e -> {
             if (controller.obtenerUsuariosRaiz().isEmpty()) {
@@ -43,13 +47,14 @@ public class ConsolaView {
             }
         });
 
+        btnEditarFamiliar.setOnAction(e -> editarFamiliar());
         btnMostrarArbol.setOnAction(e -> mostrarArbolGenealogico());
-        btnListarPendientes.setOnAction(e -> listarPendientesConfirmacion());
         btnListarFamiliares.setOnAction(e -> listarFamiliaresPorEdad());
         btnBuscarParentesco.setOnAction(e -> buscarParentescoPorNombre());
-        btnEditarFamiliar.setOnAction(e -> editarFamiliar());
+        btnCasillaCorreo.setOnAction(e -> gestionarCasillaDeCorreo()); // Casilla de correo
         btnSalir.setOnAction(e -> primaryStage.close());
 
+        // Diseñar la disposición de los botones
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(50));
         vbox.setAlignment(Pos.CENTER_LEFT);
@@ -58,12 +63,13 @@ public class ConsolaView {
                 btnAgregarFamiliar,
                 btnEditarFamiliar,
                 btnMostrarArbol,
-                btnListarPendientes,
                 btnListarFamiliares,
                 btnBuscarParentesco,
+                btnCasillaCorreo,
                 btnSalir
         );
 
+        // Configurar la escena y mostrarla
         Scene scene = new Scene(vbox, 700, 500);
         aplicarEstilos(scene);
 
@@ -192,7 +198,6 @@ public class ConsolaView {
         primaryStage.setScene(escenaSeleccion);
     }
 
-
     private void ventanaAgregarFamiliar(Usuario usuario) {
         VBox contenedorPrincipal = new VBox(10);
         contenedorPrincipal.setPadding(new Insets(20));
@@ -230,6 +235,7 @@ public class ConsolaView {
         Button btnGuardar = new Button("Guardar");
         btnGuardar.getStyleClass().add("boton-guardar");
 
+        // Acción del botón Guardar
         btnGuardar.setOnAction(e -> {
             try {
                 String tipoParentesco = cbTipoParentesco.getValue();
@@ -242,11 +248,11 @@ public class ConsolaView {
                 LocalDate fechaDefuncion = dpFechaDefuncion.getValue();
 
                 if (primerNombre.isEmpty() || apellidoPaterno.isEmpty() || apellidoMaterno.isEmpty() || fechaNacimiento == null) {
-                    mostrarMensaje("Por favor, complete todos los campos obligatorios.");
+                    mostrarMensaje("Por favor, complete todos los campos obligatorios marcados con '*'.");
                     return;
                 }
 
-                int cedula = leerCedula(cedulaTexto);
+                int cedula = leerCedula(cedulaTexto); // Método que valida y convierte la cédula
 
                 Usuario familiar = new Usuario(
                         primerNombre,
@@ -258,21 +264,13 @@ public class ConsolaView {
                         cedula
                 );
 
-                // Asignar el familiar según el tipo de parentesco seleccionado
-                switch (tipoParentesco) {
-                    case "Padre":
-                        controller.agregarPadre(usuario.getId(), familiar);
-                        break;
-                    case "Madre":
-                        controller.agregarMadre(usuario.getId(), familiar);
-                        break;
-                    case "Hijo":
-                        controller.agregarHijo(usuario.getId(), familiar);
-                        break;
-                }
+                // Asignar el familiar utilizando el método que procesa notificaciones automáticamente
+                controller.agregarFamiliar(usuario, familiar);
 
-                mostrarMensaje(tipoParentesco + " agregado exitosamente.");
-                ventanaAgregarFamiliar(usuario); // Recargar la ventana para mostrar los cambios
+                mostrarMensaje(tipoParentesco + " agregado exitosamente con notificaciones procesadas.");
+                ventanaAgregarFamiliar(usuario); // Recargar la ventana para reflejar los cambios
+            } catch (NumberFormatException nfe) {
+                mostrarMensaje("La cédula debe ser un número válido de 8 dígitos.");
             } catch (Exception ex) {
                 mostrarMensaje("Error al agregar el familiar: " + ex.getMessage());
             }
@@ -280,7 +278,7 @@ public class ConsolaView {
 
         Button btnVolver = crearBotonVolver();
 
-        // Lista de familiares del usuario
+        // Lista de familiares existentes
         ListView<Usuario> listViewFamiliares = new ListView<>();
         listViewFamiliares.getItems().addAll(controller.obtenerFamiliares(usuario));
         listViewFamiliares.setOnMouseClicked(event -> {
@@ -295,13 +293,14 @@ public class ConsolaView {
         VBox listaFamiliares = new VBox(10);
         listaFamiliares.getChildren().addAll(new Label("Familiares existentes:"), listViewFamiliares);
 
+        // Diseño del formulario
         GridPane grid = new GridPane();
         grid.setPadding(new Insets(20));
         grid.setVgap(10);
         grid.setHgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        grid.add(new Label("Tipo de Parentesco:"), 0, 0);
+        grid.add(new Label("Tipo de Parentesco*:"), 0, 0);
         grid.add(cbTipoParentesco, 1, 0);
 
         grid.add(new Separator(), 0, 1, 2, 1);
@@ -326,6 +325,7 @@ public class ConsolaView {
 
         contenedorPrincipal.getChildren().addAll(lblTitulo, grid, listaFamiliares);
 
+        // Configuración de la escena
         Scene escenaAgregarFamiliar = new Scene(contenedorPrincipal, 800, 700);
         aplicarEstilos(escenaAgregarFamiliar);
 
@@ -340,6 +340,7 @@ public class ConsolaView {
         Label lblTitulo = new Label("Editar Familiar");
         lblTitulo.getStyleClass().add("titulo");
 
+        // ListView para seleccionar un usuario a editar
         ListView<Usuario> listView = new ListView<>();
         listView.getItems().addAll(controller.obtenerTodosUsuarios()); // Carga de usuarios existentes
         listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
@@ -357,9 +358,10 @@ public class ConsolaView {
         Button btnVolver = crearBotonVolver();
         btnVolver.setOnAction(e -> cargarMenuPrincipal());
 
-        vbox.getChildren().addAll(lblTitulo, listView, btnSeleccionar, btnVolver);
+        vbox.getChildren().addAll(lblTitulo, new Label("Seleccione un familiar para editar:"), listView, btnSeleccionar, btnVolver);
 
         Scene scene = new Scene(vbox, 800, 600);
+        aplicarEstilos(scene); // Aplicar estilos definidos
         primaryStage.setScene(scene);
     }
 
@@ -413,38 +415,21 @@ public class ConsolaView {
     }
 
     private void listarPendientesConfirmacion() {
-        if (controller.obtenerUsuariosRaiz().isEmpty()) {
-            mostrarMensaje("No hay usuarios raíz disponibles.");
+        Usuario usuarioActual = controller.getUsuarioActual();
+        if (usuarioActual == null) {
+            mostrarMensaje("Debe seleccionar un usuario para listar pendientes.");
             return;
         }
 
-        Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().get(0);
-
-        List<Usuario> pendientes = controller.obtenerFamiliaresPendientes(usuarioRaiz);
-
-        if (pendientes.isEmpty()) {
+        Lista<Usuario> pendientes = controller.obtenerPendientesDeConfirmacion(usuarioActual);
+        if (pendientes.estaVacio()) {
             mostrarMensaje("No hay familiares pendientes de confirmación.");
-            return;
+        } else {
+            System.out.println("Familiares pendientes de confirmación:");
+            for (Usuario pendiente : pendientes) {
+                System.out.println(pendiente.getNombreCompleto());
+            }
         }
-
-        VBox contenedorPrincipal = new VBox(10);
-        contenedorPrincipal.setPadding(new Insets(20));
-        contenedorPrincipal.setAlignment(Pos.TOP_CENTER);
-
-        Label lblTitulo = new Label("Familiares Pendientes de Confirmación");
-        lblTitulo.getStyleClass().add("titulo-pendientes");
-
-        ListView<Usuario> listViewPendientes = new ListView<>();
-        listViewPendientes.getItems().addAll(pendientes);
-        listViewPendientes.getStyleClass().add("list-view-pendientes");
-
-        Button btnVolver = crearBotonVolver();
-
-        contenedorPrincipal.getChildren().addAll(lblTitulo, listViewPendientes, btnVolver);
-
-        Scene escenaPendientes = new Scene(contenedorPrincipal, 700, 500);
-        aplicarEstilos(escenaPendientes);
-        primaryStage.setScene(escenaPendientes);
     }
 
     private void listarFamiliaresPorEdad() {
@@ -564,6 +549,127 @@ public class ConsolaView {
         alert.showAndWait();
     }
 
+    private void gestionarCasillaDeCorreo() {
+        // Obtener usuarios raíz disponibles
+        List<Usuario> usuariosRaiz = controller.obtenerUsuariosRaiz();
+        if (usuariosRaiz.isEmpty()) {
+            mostrarMensaje("No hay usuarios raíz disponibles.");
+            return;
+        }
+
+        // Crear una nueva ventana para seleccionar un usuario
+        Stage stageSeleccionarUsuario = new Stage();
+        stageSeleccionarUsuario.setTitle("Seleccionar Usuario para la Casilla de Correo");
+
+        // ListView para mostrar los usuarios raíz disponibles
+        ListView<String> listViewUsuarios = new ListView<>();
+        for (Usuario usuario : usuariosRaiz) {
+            listViewUsuarios.getItems().add(usuario.getNombreCompleto());
+        }
+
+        // Botón para seleccionar al usuario
+        Button btnSeleccionarUsuario = new Button("Seleccionar Usuario");
+        btnSeleccionarUsuario.setOnAction(event -> {
+            int selectedIndex = listViewUsuarios.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                Usuario usuarioSeleccionado = usuariosRaiz.get(selectedIndex);
+                mostrarCasillaDeCorreo(usuarioSeleccionado); // Mostrar notificaciones del usuario seleccionado
+                stageSeleccionarUsuario.close();
+            } else {
+                mostrarMensaje("Debe seleccionar un usuario para continuar.");
+            }
+        });
+
+        // Diseño de la ventana de selección
+        VBox vboxSeleccionar = new VBox(10, new Label("Seleccione un Usuario:"), listViewUsuarios, btnSeleccionarUsuario);
+        vboxSeleccionar.setPadding(new Insets(20));
+        vboxSeleccionar.setAlignment(Pos.CENTER);
+
+        // Configurar y mostrar la escena
+        Scene sceneSeleccionar = new Scene(vboxSeleccionar, 400, 300);
+        stageSeleccionarUsuario.setScene(sceneSeleccionar);
+        stageSeleccionarUsuario.show();
+    }
+
+    private void mostrarCasillaDeCorreo(Usuario usuario) {
+        Stage stageCasilla = new Stage();
+        stageCasilla.setTitle("Casilla de Correo: " + usuario.getNombreCompleto());
+
+        ListView<String> listViewCorreos = new ListView<>();
+        for (Correo correo : usuario.getBandejaDeEntrada()) {
+            listViewCorreos.getItems().add(correo.toString());
+        }
+
+        Button btnLeerCorreo = new Button("Leer Correo");
+        Button btnEliminarCorreo = new Button("Eliminar Correo");
+        Button btnCerrar = new Button("Cerrar");
+
+        btnLeerCorreo.setOnAction(e -> {
+            int selectedIndex = listViewCorreos.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                Correo correo = usuario.getBandejaDeEntrada().obtenerElementoEnPosicion(selectedIndex);
+                correo.marcarComoLeido();
+                mostrarMensaje("Correo leído: " + correo.getMensaje());
+                listViewCorreos.getItems().set(selectedIndex, correo.toString()); // Actualizar estado
+            } else {
+                mostrarMensaje("Seleccione un correo para leer.");
+            }
+        });
+
+        btnEliminarCorreo.setOnAction(e -> {
+            int selectedIndex = listViewCorreos.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                usuario.getBandejaDeEntrada().removerEnPosicion(selectedIndex);
+                listViewCorreos.getItems().remove(selectedIndex);
+                mostrarMensaje("Correo eliminado.");
+            } else {
+                mostrarMensaje("Seleccione un correo para eliminar.");
+            }
+        });
+
+        btnCerrar.setOnAction(e -> stageCasilla.close());
+
+        VBox vboxCasilla = new VBox(10, listViewCorreos, btnLeerCorreo, btnEliminarCorreo, btnCerrar);
+        vboxCasilla.setPadding(new Insets(20));
+        vboxCasilla.setAlignment(Pos.CENTER);
+
+        Scene sceneCasilla = new Scene(vboxCasilla, 600, 400);
+        stageCasilla.setScene(sceneCasilla);
+        stageCasilla.show();
+    }
+
+    private void seleccionarUsuarioActual() {
+        List<Usuario> usuariosRaiz = controller.obtenerUsuariosRaiz();
+        Stage stage = new Stage();
+        stage.setTitle("Seleccionar Usuario Actual");
+
+        ListView<String> listViewUsuarios = new ListView<>();
+        for (Usuario usuario : usuariosRaiz) {
+            listViewUsuarios.getItems().add(usuario.getNombreCompleto());
+        }
+
+        Button btnSeleccionar = new Button("Seleccionar");
+        btnSeleccionar.setOnAction(event -> {
+            int selectedIndex = listViewUsuarios.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                Usuario seleccionado = usuariosRaiz.get(selectedIndex);
+                controller.setUsuarioActual(seleccionado); // Asignar el usuario seleccionado al controlador
+                mostrarMensaje("Usuario actual: " + seleccionado.getNombreCompleto());
+                stage.close();
+            } else {
+                mostrarMensaje("Seleccione un usuario.");
+            }
+        });
+
+        VBox vbox = new VBox(10, listViewUsuarios, btnSeleccionar);
+        vbox.setPadding(new Insets(20));
+        vbox.setAlignment(Pos.CENTER);
+
+        Scene scene = new Scene(vbox, 400, 300);
+        stage.setScene(scene);
+        stage.show();
+    }
+
     private int leerCedula(String input) throws Exception {
         try {
             int cedula = Integer.parseInt(input);
@@ -585,39 +691,4 @@ public class ConsolaView {
         return btnVolver;
     }
 
-    private List<String> obtenerParentescosDeSangreSegunGrado(int grado) {
-        List<String> parentescos = new java.util.ArrayList<>();
-        switch (grado) {
-            case 1: // Relación directa
-                parentescos.add("Padre");
-                parentescos.add("Madre");
-                parentescos.add("Hermano");
-                parentescos.add("Hermana");
-                parentescos.add("Hijo");
-                parentescos.add("Hija");
-                break;
-            case 2: // Relación de segundo grado
-                parentescos.add("Abuelo");
-                parentescos.add("Abuela");
-                parentescos.add("Tío");
-                parentescos.add("Tía");
-                parentescos.add("Nieto");
-                parentescos.add("Nieta");
-                parentescos.add("Sobrino");
-                parentescos.add("Sobrina");
-                break;
-            case 3: // Relación de tercer grado
-                parentescos.add("Bisabuelo");
-                parentescos.add("Bisabuela");
-                parentescos.add("Primo");
-                parentescos.add("Prima");
-                parentescos.add("Bisnieto");
-                parentescos.add("Bisnieta");
-                break;
-            default: // Relación genérica
-                parentescos.add("Pariente Grado " + grado);
-                break;
-        }
-        return parentescos;
-    }
 }

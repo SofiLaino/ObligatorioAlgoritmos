@@ -254,8 +254,6 @@ public class Lista<T extends Comparable<T>> implements IListaDoble<T> {
         }
     }
 
-
-
     public List<Usuario> toList() {
         List<Usuario> list = new ArrayList<>();
         NodoDoble<T> current = this.cabeza(); // Usamos cabeza() para obtener el primer nodo de la lista
@@ -268,6 +266,28 @@ public class Lista<T extends Comparable<T>> implements IListaDoble<T> {
 
     public int tamaño() {
         return contador;  // Devuelve el número de elementos en la lista
+    }
+
+    public T obtenerElementoEnPosicion(int posicion) {
+        if (posicion < 0 || posicion >= contador()) {
+            throw new IndexOutOfBoundsException("Posición fuera de rango.");
+        }
+        NodoDoble<T> actual = cabeza();
+        for (int i = 0; i < posicion; i++) {
+            actual = actual.getSiguiente();
+        }
+        return actual.getDato();
+    }
+
+    public void removerEnPosicion(int posicion) {
+        if (posicion < 0 || posicion >= contador()) {
+            throw new IndexOutOfBoundsException("Posición fuera de rango.");
+        }
+        NodoDoble<T> actual = cabeza();
+        for (int i = 0; i < posicion; i++) {
+            actual = actual.getSiguiente();
+        }
+        removerItem(actual.getDato());
     }
 
 }

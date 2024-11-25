@@ -2,6 +2,7 @@ package org.example.controller;
 
 import org.example.estructura.ListaDoblementeEncadenada.Lista;
 import org.example.model.ArbolGenealogico;
+import org.example.model.Correo;
 import org.example.model.Usuario;
 import org.example.view.ConsolaView;
 
@@ -10,10 +11,19 @@ import java.util.*;
 public class ArbolController {
     private ArbolGenealogico arbolGenealogico;
     private ConsolaView vista;
+    private Usuario usuarioActual;
 
     public ArbolController(ArbolGenealogico arbolGenealogico, ConsolaView vista) {
         this.arbolGenealogico = arbolGenealogico;
         this.vista = vista;
+    }
+
+    public Usuario getUsuarioActual() {
+        return usuarioActual;
+    }
+
+    public void setUsuarioActual(Usuario usuarioActual) {
+        this.usuarioActual = usuarioActual;
     }
 
     public void setVista(ConsolaView vista) {
@@ -89,6 +99,19 @@ public class ArbolController {
         }
     }
 
+    public void agregarFamiliar(Usuario usuario, Usuario familiar) {
+        if (familiar == null) {
+            mostrarMensaje("El familiar no puede ser nulo.");
+            return;
+        }
+
+        // Determinar la relación entre los usuarios (puedes expandir según la lógica de tu sistema)
+        usuario.agregarHijo(familiar);
+
+        // Procesar notificaciones automáticas según la lógica definida
+        procesarNotificacionesAutomaticas(familiar, usuario);
+    }
+
     // Cambié el tipo de retorno a List<Usuario>
     public List<Usuario> obtenerFamiliares(Usuario usuario) {
         List<Usuario> familiares = new java.util.ArrayList<>();
@@ -149,7 +172,6 @@ public class ArbolController {
 
         return Optional.empty();
     }
-
 
     private List<Usuario> obtenerUsuariosPendientes(Usuario usuario, List<Usuario> pendientes) {
         if (usuario == null) return pendientes;
@@ -220,5 +242,123 @@ public class ArbolController {
         if (vista != null) {
             vista.mostrarMensaje(mensaje);
         }
+    }
+
+    public void procesarNotificacionesAutomaticas(Usuario familiar, Usuario solicitante) {
+        if (familiar.getFechaDefuncion() != null) {
+            // Persona fallecida
+            Correo notificacion = new Correo(solicitante,
+                    "Confirmación requerida: El registro de " + familiar.getNombreCompleto() +
+                            " como fallecido necesita ser validado por 3 familiares directos.");
+            solicitante.recibirCorreo(notificacion);
+            mostrarMensaje("Se ha enviado una notificación para confirmar el fallecimiento de " + familiar.getNombreCompleto());
+        } else if (familiar.getEdad() < 18) {
+            // Persona menor de edad
+            Correo notificacion = new Correo(solicitante,
+                    "Confirmación requerida: El registro de " + familiar.getNombreCompleto() +
+                            " como menor de edad necesita ser validado por un segundo progenitor o familiar directo.");
+            solicitante.recibirCorreo(notificacion);
+            mostrarMensaje("Se ha enviado una notificación para confirmar el registro del menor " + familiar.getNombreCompleto());
+        } else {
+            // Persona mayor de edad
+            Correo notificacion = new Correo(solicitante,
+                    "Invitación enviada: " + familiar.getNombreCompleto() +
+                            " debe confirmar su registro.");
+            solicitante.recibirCorreo(notificacion);
+            mostrarMensaje("Se ha enviado una invitación para confirmar los datos de " + familiar.getNombreCompleto());
+        }
+    }
+
+    public void invitarPersonaMayorDeEdad(Usuario usuario, Usuario invitado) {
+        if (invitado.getEdad() < 18) {
+            mostrarMensaje("La persona no es mayor de edad.");
+            return;
+        }
+
+        Correo invitacion = new Correo(usuario, "Invitación enviada a " + invitado.getNombreCompleto() +
+                " para confirmar su registro.");
+        usuario.recibirCorreo(invitacion);
+
+        mostrarMensaje("Se ha enviado una invitación para confirmar los datos de " + invitado.getNombreCompleto() + ".");
+    }
+
+    public void confirmarDatosPersona(Usuario usuario) {
+        if (!usuario.isConfirmado()) {
+            usuario.setConfirmado(true);
+            mostrarMensaje("Los datos de " + usuario.getNombreCompleto() + " han sido confirmados.");
+        } else {
+            mostrarMensaje("El usuario ya estaba confirmado.");
+        }
+    }
+
+    public void confirmarRegistroFallecido(Usuario fallecido, Usuario confirmador) {
+        if (fallecido.getFechaDefuncion() == null) {
+            mostrarMensaje("El usuario no está marcado como fallecido.");
+            return;
+        }
+
+        fallecido.agregarConfirmador(confirmador);
+        mostrarMensaje("Confirmación de " + confirmador.getNombreCompleto() + " registrada.");
+
+        if (fallecido.registroConfirmadoPorFallecimiento()) {
+            fallecido.setConfirmado(true);
+            mostrarMensaje("El registro del fallecido " + fallecido.getNombreCompleto() + " ha sido confirmado.");
+        }
+    }
+
+    public void confirmarRegistroMenor(Usuario menor, Usuario confirmador) {
+        if (menor.getEdad() >= 18) {
+            mostrarMensaje("La persona no es menor de edad.");
+            return;
+        }
+
+        if (esFamiliarDirectoHastaSegundoGrado(menor, confirmador)) {
+            menor.setConfirmado(true);
+            mostrarMensaje("El registro del menor " + menor.getNombreCompleto() + " ha sido confirmado por " + confirmador.getNombreCompleto() + ".");
+        } else {
+            mostrarMensaje("El confirmador no cumple los requisitos.");
+        }
+    }
+
+    private boolean esFamiliarDirectoHastaSegundoGrado(Usuario menor, Usuario confirmador) {
+        return menor.getPadre() == confirmador || menor.getMadre() == confirmador ||
+                menor.getHijos().contiene(confirmador) || // abuelos
+                menor.getPadre() != null && menor.getPadre().getPadre() == confirmador || // bisabuelos
+                menor.getPadre() != null && menor.getPadre().getHijos().contiene(confirmador); // hermanos
+    }
+
+    public Lista<Usuario> obtenerPendientesDeConfirmacion(Usuario usuario) {
+        Lista<Usuario> pendientes = new Lista<>();
+        obtenerPendientesRecursivamente(usuario, pendientes);
+        return pendientes;
+    }
+
+    private void obtenerPendientesRecursivamente(Usuario usuario, Lista<Usuario> pendientes) {
+        if (usuario == null) return;
+
+        if (!usuario.isConfirmado()) {
+            pendientes.agregar(usuario);
+        }
+
+        for (Usuario hijo : usuario.getHijos()) {
+            obtenerPendientesRecursivamente(hijo, pendientes);
+        }
+
+        if (usuario.getPadre() != null) {
+            obtenerPendientesRecursivamente(usuario.getPadre(), pendientes);
+        }
+        if (usuario.getMadre() != null) {
+            obtenerPendientesRecursivamente(usuario.getMadre(), pendientes);
+        }
+    }
+
+    public void enviarCorreo(Usuario destinatario, String mensaje) {
+        if (destinatario == null) {
+            mostrarMensaje("Destinatario no válido.");
+            return;
+        }
+        Correo correo = new Correo(destinatario, mensaje);
+        destinatario.recibirCorreo(correo);
+        mostrarMensaje("Correo enviado a: " + destinatario.getNombreCompleto());
     }
 }

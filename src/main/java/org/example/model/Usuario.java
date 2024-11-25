@@ -8,6 +8,8 @@ import java.util.Collection;
 
 public class Usuario implements Comparable<Usuario> {
     private static int contadorId = 1;
+    private Lista<Correo> bandejaDeEntrada = new Lista<>();
+    private Lista<Usuario> confirmadores = new Lista<>();
 
     private int id;
     private String primerNombre;
@@ -144,6 +146,24 @@ public class Usuario implements Comparable<Usuario> {
         }
         nombreCompleto.append(" ").append(apellidoPaterno).append(" ").append(apellidoMaterno);
         return nombreCompleto.toString();
+    }
+
+    public Lista<Correo> getBandejaDeEntrada() {
+        return bandejaDeEntrada;
+    }
+
+    public void recibirCorreo(Correo correo) {
+        bandejaDeEntrada.agregar(correo);
+    }
+
+    public void agregarConfirmador(Usuario confirmador) {
+        if (!confirmadores.contiene(confirmador)) {
+            confirmadores.agregar(confirmador);
+        }
+    }
+
+    public boolean registroConfirmadoPorFallecimiento() {
+        return confirmadores.contador() >= 3;
     }
 
     @Override

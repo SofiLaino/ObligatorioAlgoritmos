@@ -265,7 +265,7 @@ public class ConsolaView {
                 );
 
                 // Asignar el familiar utilizando el método que procesa notificaciones automáticamente
-                controller.agregarFamiliar(usuario, familiar);
+                controller.agregarFamiliar(usuario, familiar, tipoParentesco);
 
                 mostrarMensaje(tipoParentesco + " agregado exitosamente con notificaciones procesadas.");
                 ventanaAgregarFamiliar(usuario); // Recargar la ventana para reflejar los cambios

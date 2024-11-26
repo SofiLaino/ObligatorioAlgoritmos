@@ -99,20 +99,57 @@ public class ArbolController {
         }
     }
 
-    public void agregarFamiliar(Usuario usuario, Usuario familiar) {
+    public void agregarFamiliar(Usuario usuario, Usuario familiar, String tipoParentesco) {
         if (familiar == null) {
             mostrarMensaje("El familiar no puede ser nulo.");
             return;
         }
 
-        // Determinar la relación entre los usuarios (puedes expandir según la lógica de tu sistema)
-        usuario.agregarHijo(familiar);
+        switch (tipoParentesco.toLowerCase()) {
+            case "padre":
+                if (usuario.getPadre() != null) {
+                    mostrarMensaje("El usuario ya tiene un padre registrado.");
+                    return;
+                }
+                usuario.setPadre(familiar);
+                familiar.agregarHijo(usuario); // Enlace bidireccional
+                mostrarMensaje("Padre agregado exitosamente.");
+                break;
+
+            case "madre":
+                if (usuario.getMadre() != null) {
+                    mostrarMensaje("El usuario ya tiene una madre registrada.");
+                    return;
+                }
+                usuario.setMadre(familiar);
+                familiar.agregarHijo(usuario); // Enlace bidireccional
+                mostrarMensaje("Madre agregada exitosamente.");
+                break;
+
+            case "hijo":
+                if (!usuario.getHijos().contiene(familiar)) {
+                    usuario.agregarHijo(familiar);
+                    if (familiar.getPadre() == null) {
+                        familiar.setPadre(usuario); // Establece el padre si está vacío
+                    } else if (familiar.getMadre() == null) {
+                        familiar.setMadre(usuario); // O establece la madre si está vacío
+                    }
+                    mostrarMensaje("Hijo agregado exitosamente.");
+                } else {
+                    mostrarMensaje("Este hijo ya está registrado.");
+                }
+                break;
+
+            default:
+                mostrarMensaje("Tipo de parentesco no válido.");
+                return;
+        }
 
         // Procesar notificaciones automáticas según la lógica definida
         procesarNotificacionesAutomaticas(familiar, usuario);
     }
 
-    // Cambié el tipo de retorno a List<Usuario>
+
     public List<Usuario> obtenerFamiliares(Usuario usuario) {
         List<Usuario> familiares = new java.util.ArrayList<>();
         if (usuario.getPadre() != null) familiares.add(usuario.getPadre());
@@ -213,7 +250,6 @@ public class ArbolController {
         return familiares;
     }
 
-    // Cambié el tipo de retorno a List<Usuario>
     public List<Usuario> obtenerTodosUsuarios() {
         List<Usuario> usuarios = new java.util.ArrayList<>();
         for (Usuario raiz : arbolGenealogico.getRaices()) {
@@ -356,7 +392,6 @@ public class ArbolController {
         this.usuarioActual = nuevoUsuario;
         mostrarMensaje("Usuario actual actualizado a: " + nuevoUsuario.getNombreCompleto());
     }
-
 
     public void enviarCorreo(Usuario destinatario, String mensaje) {
         if (destinatario == null) {

@@ -35,54 +35,38 @@ public class Main extends Application {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
         // Usuario raíz
-        Usuario usuarioRaiz1 = new Usuario("Juan", "", "Pérez", "González",
-                LocalDate.parse("01/01/1970", dateFormatter), null, 12345678);
+        Usuario usuarioRaiz1 = new Usuario("Sofia", "Noelia", "Laino", "Gonzalez",
+                LocalDate.parse("28/09/1994", dateFormatter), null, 54867197);
         controller.agregarUsuarioRaiz(usuarioRaiz1);
 
         // Agregar familiares del usuario raíz
-        Usuario padre = new Usuario("José", "", "Pérez", "Martínez",
-                LocalDate.parse("01/01/1945", dateFormatter), null, 87654321);
+        Usuario padre = new Usuario("Sergio", "Nicolas", "Laino", "Quintana",
+                LocalDate.parse("28/01/1994", dateFormatter), null, 15284176);
         controller.agregarPadre(usuarioRaiz1.getId(), padre);
 
-        Usuario madre = new Usuario("Ana", "", "González", "López",
-                LocalDate.parse("05/05/1948", dateFormatter), null, 11223344);
+        Usuario madre = new Usuario("Maria", "del Carmen", "Gonzalez", "Gonzalez",
+                LocalDate.parse("02/06/1960", dateFormatter), null, 17566342);
         controller.agregarMadre(usuarioRaiz1.getId(), madre);
 
-        Usuario hijo = new Usuario("Andrés", "", "Pérez", "Martínez",
+        Usuario hijo = new Usuario("Osvaldito", "Justin", "Laino", "Gonzalez",
                 LocalDate.parse("15/05/1995", dateFormatter), null, 33445566);
         controller.agregarHijo(usuarioRaiz1.getId(), hijo);
 
-        Usuario abueloPaterno = new Usuario("Ramón", "", "Pérez", "Soto",
-                LocalDate.parse("15/03/1920", dateFormatter), null, 44556677);
+        Usuario abueloPaterno = new Usuario("Francisco", "", "Laino", "Decundo",
+                LocalDate.parse("05/06/1929", dateFormatter), null, 45672345);
         controller.agregarPadre(padre.getId(), abueloPaterno);
 
-        Usuario abuelaPaterna = new Usuario("Clara", "", "Martínez", "Rivas",
-                LocalDate.parse("20/07/1925", dateFormatter), null, 55667788);
+        Usuario abuelaPaterna = new Usuario("Maria", "Irma", "Quintana", "Mieres",
+                LocalDate.parse("04/12/1929", dateFormatter), null, 55667788);
         controller.agregarMadre(padre.getId(), abuelaPaterna);
 
-        Usuario abueloMaterno = new Usuario("Javier", "", "González", "Soto",
-                LocalDate.parse("10/10/1922", dateFormatter), null, 66778899);
+        Usuario abueloMaterno = new Usuario("Braulio", "", "Gonzalez", "Gonzalez",
+                LocalDate.parse("26/03/1914", dateFormatter), null, 66778899);
         controller.agregarPadre(madre.getId(), abueloMaterno);
 
-        Usuario abuelaMaterna = new Usuario("María", "", "López", "Rivas",
-                LocalDate.parse("25/12/1926", dateFormatter), null, 77889900);
+        Usuario abuelaMaterna = new Usuario("Maria", "Dolores", "Gonzalez", "Camacho",
+                LocalDate.parse("22/11/1918", dateFormatter), null, 77889900);
         controller.agregarMadre(madre.getId(), abuelaMaterna);
-
-        Usuario abuelaMaterna2 = new Usuario("María2", "", "López2", "Rivas",
-                LocalDate.parse("25/12/1926", dateFormatter), null, 77889900);
-        controller.agregarMadre(abuelaMaterna.getId(), abuelaMaterna2);
-
-        Usuario abueloMaterno2 = new Usuario("Javier2", "", "González2", "Soto",
-                LocalDate.parse("10/10/1922", dateFormatter), null, 66778899);
-        controller.agregarPadre(abuelaMaterna.getId(), abueloMaterno2);
-
-        Usuario hermano = new Usuario("Luis", "", "Pérez", "González",
-                LocalDate.parse("10/10/1975", dateFormatter), null, 99001122);
-        controller.agregarHijo(padre.getId(), hermano);
-
-        Usuario nieto = new Usuario("Carlos", "", "Pérez", "Pereira",
-                LocalDate.parse("20/08/2000", dateFormatter), null, 10111213);
-        controller.agregarHijo(hijo.getId(), nieto);
 
         System.out.println("Datos de prueba cargados exitosamente.");
     }

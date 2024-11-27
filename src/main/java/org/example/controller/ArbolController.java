@@ -447,7 +447,7 @@ public class ArbolController {
         }
 
         String asunto = "Invitación para confirmar registro";
-        String mensaje = "Por favor, confirma tu registro en el sistema.";
+        String mensaje = "Por favor, confirma tu registro en el sistema." + " (Id: " + invitado.getId() +")";
 
         enviarCorreo(invitado, asunto, mensaje);
         mostrarMensaje("Se ha enviado una invitación a " + invitado.getNombreCompleto() + ".");

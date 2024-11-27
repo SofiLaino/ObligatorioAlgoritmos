@@ -1,5 +1,7 @@
 package org.example.view;
 
+import javafx.scene.control.Button;
+import javafx.scene.layout.StackPane;
 import org.example.controller.ArbolController;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.Pane;
@@ -26,7 +28,7 @@ public class ArbolGenealogicoView {
     private Map<Usuario, Rectangle> nodosMapa;
     private Set<Usuario> nodosVisitados;
 
-    public ArbolGenealogicoView(ArbolController controller, Usuario usuarioRaiz) {
+    public ArbolGenealogicoView(ArbolController controller, Usuario usuarioRaiz, Runnable onVolver) {
         if (controller == null || usuarioRaiz == null) {
             throw new IllegalArgumentException("El controlador y el usuario raíz no pueden ser nulos.");
         }
@@ -48,6 +50,14 @@ public class ArbolGenealogicoView {
 
         // Inicializar el árbol genealógico
         inicializarArbol();
+
+        // Agregar botón de volver
+        StackPane stackPane = new StackPane(root);
+        Button btnVolver = crearBotonVolver(onVolver);
+        StackPane.setAlignment(btnVolver, javafx.geometry.Pos.TOP_LEFT);
+        stackPane.getChildren().add(btnVolver);
+
+        this.root = new ScrollPane(stackPane);
     }
 
     public ScrollPane getRoot() {
@@ -94,6 +104,18 @@ public class ArbolGenealogicoView {
         root.setVvalue(0.5);
         root.setHvalue(0.5);
     }
+
+    private Button crearBotonVolver(Runnable onVolver) {
+        Button btnVolver = new Button("Volver");
+        btnVolver.setStyle("-fx-background-color: #FF6F61; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 5px 10px;");
+        btnVolver.setOnAction(event -> {
+            if (onVolver != null) {
+                onVolver.run();
+            }
+        });
+        return btnVolver;
+    }
+
     private Set<String> posicionesOcupadas = new HashSet<>();
 
     private void dibujarNodo(Usuario usuario, double x, double y, String tipoParentesco) {
@@ -243,7 +265,6 @@ public class ArbolGenealogicoView {
         return Math.max(anchoPadre + anchoMadre, 1);
     }
 
-
     private int calcularAltura(Usuario usuario) {
         if (usuario == null) {
             return 0;
@@ -268,6 +289,4 @@ public class ArbolGenealogicoView {
 
         return Math.max(alturaPadre, alturaMadre) + 1;
     }
-
-
 }

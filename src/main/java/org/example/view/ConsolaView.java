@@ -19,6 +19,7 @@ public class ConsolaView {
     private ArbolController controller;
     private Stage primaryStage;
     private DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private ListView<Usuario> listViewFamiliares; // Campo de clase
 
     public ConsolaView(ArbolController controller, Stage primaryStage) {
         this.controller = controller;
@@ -40,7 +41,7 @@ public class ConsolaView {
         // Asignar acciones a los botones
         btnCrearUsuario.setOnAction(e -> crearUsuarioRaiz());
         btnAgregarFamiliar.setOnAction(e -> {
-            if (controller.obtenerUsuariosRaiz().isEmpty()) {
+            if (controller.obtenerUsuariosRaiz().estaVacio()) {
                 mostrarMensaje("No hay usuarios raíz disponibles. Primero debe crear un usuario raíz.");
             } else {
                 seleccionarUsuarioParaAgregarFamiliar();
@@ -174,7 +175,10 @@ public class ConsolaView {
         lblTitulo.getStyleClass().add("titulo-seleccion-usuario");
 
         ListView<Usuario> listViewUsuarios = new ListView<>();
-        listViewUsuarios.getItems().addAll(controller.obtenerUsuariosRaiz());
+        // Convertir la Lista personalizada a una lista estándar de Java
+        for (Usuario usuario : controller.obtenerUsuariosRaiz()) {
+            listViewUsuarios.getItems().add(usuario);
+        }
         listViewUsuarios.getStyleClass().add("list-view-usuarios");
 
         Button btnSeleccionar = new Button("Seleccionar");
@@ -203,6 +207,7 @@ public class ConsolaView {
         contenedorPrincipal.setPadding(new Insets(20));
         contenedorPrincipal.setAlignment(Pos.TOP_CENTER);
 
+        // Título de la ventana
         Label lblTitulo = new Label("Agregar Familiar a " + usuario.getNombreCompleto());
         lblTitulo.getStyleClass().add("titulo-agregar-familiar");
 
@@ -211,6 +216,7 @@ public class ConsolaView {
         cbTipoParentesco.getItems().addAll("Padre", "Madre", "Hijo");
         cbTipoParentesco.setValue("Padre"); // Valor predeterminado
 
+        // Campos de texto para los datos del familiar
         TextField txtPrimerNombre = new TextField();
         txtPrimerNombre.setPromptText("Primer Nombre");
 
@@ -226,18 +232,34 @@ public class ConsolaView {
         TextField txtCedula = new TextField();
         txtCedula.setPromptText("Cédula (8 dígitos)");
 
+        // Campos para fechas
         DatePicker dpFechaNacimiento = new DatePicker();
         dpFechaNacimiento.setPromptText("Fecha de Nacimiento");
 
         DatePicker dpFechaDefuncion = new DatePicker();
         dpFechaDefuncion.setPromptText("Fecha de Defunción (Opcional)");
 
-        Button btnGuardar = new Button("Guardar");
-        btnGuardar.getStyleClass().add("boton-guardar");
+        // Lista de familiares existentes usando tu clase Lista
+        ListView<Usuario> listViewFamiliares = new ListView<>();
+        Lista<Usuario> familiares = controller.obtenerFamiliares(usuario); // Usando Lista personalizada
+        for (Usuario familiar : familiares) { // Iterar sobre la lista para mostrar familiares
+            listViewFamiliares.getItems().add(familiar);
+        }
+        listViewFamiliares.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) { // Doble clic para editar
+                Usuario seleccionado = listViewFamiliares.getSelectionModel().getSelectedItem();
+                if (seleccionado != null) {
+                    ventanaAgregarFamiliar(seleccionado);
+                }
+            }
+        });
 
         // Acción del botón Guardar
+        Button btnGuardar = new Button("Guardar");
+        btnGuardar.getStyleClass().add("boton-guardar");
         btnGuardar.setOnAction(e -> {
             try {
+                // Leer y validar los campos
                 String tipoParentesco = cbTipoParentesco.getValue();
                 String primerNombre = txtPrimerNombre.getText().trim();
                 String segundoNombre = txtSegundoNombre.getText().trim();
@@ -247,13 +269,31 @@ public class ConsolaView {
                 LocalDate fechaNacimiento = dpFechaNacimiento.getValue();
                 LocalDate fechaDefuncion = dpFechaDefuncion.getValue();
 
+                // Validaciones básicas
                 if (primerNombre.isEmpty() || apellidoPaterno.isEmpty() || apellidoMaterno.isEmpty() || fechaNacimiento == null) {
                     mostrarMensaje("Por favor, complete todos los campos obligatorios marcados con '*'.");
                     return;
                 }
 
-                int cedula = leerCedula(cedulaTexto); // Método que valida y convierte la cédula
+                int cedula = leerCedula(cedulaTexto); // Validar y convertir la cédula
 
+                // Validar si la cédula ya está registrada
+                Lista<Usuario> todosLosUsuarios = controller.obtenerTodosUsuarios();
+                boolean cedulaDuplicada = false;
+
+                for (Usuario usuarioExistente : todosLosUsuarios) { // Iterar manualmente para verificar duplicados
+                    if (usuarioExistente.getCedula() == cedula) {
+                        cedulaDuplicada = true;
+                        break;
+                    }
+                }
+
+                if (cedulaDuplicada) {
+                    mostrarMensaje("La cédula ingresada ya está registrada.");
+                    return;
+                }
+
+                // Crear el objeto Usuario para el familiar
                 Usuario familiar = new Usuario(
                         primerNombre,
                         segundoNombre,
@@ -264,11 +304,29 @@ public class ConsolaView {
                         cedula
                 );
 
-                // Asignar el familiar utilizando el método que procesa notificaciones automáticamente
+                // Llamar al controlador para agregar el familiar
                 controller.agregarFamiliar(usuario, familiar, tipoParentesco);
 
-                mostrarMensaje(tipoParentesco + " agregado exitosamente con notificaciones procesadas.");
-                ventanaAgregarFamiliar(usuario); // Recargar la ventana para reflejar los cambios
+                // Actualizar la lista de familiares para evitar duplicados
+                listViewFamiliares.getItems().clear();
+                Lista<Usuario> actualizados = controller.obtenerFamiliares(usuario);
+                for (Usuario actualizado : actualizados) {
+                    listViewFamiliares.getItems().add(actualizado);
+                }
+
+                mostrarMensaje(tipoParentesco + " agregado exitosamente.");
+                mostrarMensaje("Se envió una notificación de confirmación al familiar agregado.");
+
+                // Limpiar el formulario para permitir agregar otro familiar
+                txtPrimerNombre.clear();
+                txtSegundoNombre.clear();
+                txtApellidoPaterno.clear();
+                txtApellidoMaterno.clear();
+                txtCedula.clear();
+                dpFechaNacimiento.setValue(null);
+                dpFechaDefuncion.setValue(null);
+                cbTipoParentesco.setValue("Padre");
+
             } catch (NumberFormatException nfe) {
                 mostrarMensaje("La cédula debe ser un número válido de 8 dígitos.");
             } catch (Exception ex) {
@@ -276,19 +334,8 @@ public class ConsolaView {
             }
         });
 
+        // Botón Volver
         Button btnVolver = crearBotonVolver();
-
-        // Lista de familiares existentes
-        ListView<Usuario> listViewFamiliares = new ListView<>();
-        listViewFamiliares.getItems().addAll(controller.obtenerFamiliares(usuario));
-        listViewFamiliares.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) { // Doble clic para editar
-                Usuario seleccionado = listViewFamiliares.getSelectionModel().getSelectedItem();
-                if (seleccionado != null) {
-                    ventanaAgregarFamiliar(seleccionado);
-                }
-            }
-        });
 
         VBox listaFamiliares = new VBox(10);
         listaFamiliares.getChildren().addAll(new Label("Familiares existentes:"), listViewFamiliares);
@@ -332,6 +379,18 @@ public class ConsolaView {
         primaryStage.setScene(escenaAgregarFamiliar);
     }
 
+    public void actualizarListaFamiliares(Usuario usuario) {
+        if (listViewFamiliares != null) {
+            listViewFamiliares.getItems().clear();
+
+            // Obtener familiares usando tu clase Lista
+            Lista<Usuario> familiares = controller.obtenerFamiliares(usuario);
+            for (Usuario familiar : familiares) { // Iterar sobre la lista personalizada
+                listViewFamiliares.getItems().add(familiar);
+            }
+        }
+    }
+
     private void editarFamiliar() {
         VBox vbox = new VBox(10);
         vbox.setPadding(new Insets(20));
@@ -342,7 +401,13 @@ public class ConsolaView {
 
         // ListView para seleccionar un usuario a editar
         ListView<Usuario> listView = new ListView<>();
-        listView.getItems().addAll(controller.obtenerTodosUsuarios()); // Carga de usuarios existentes
+        Lista<Usuario> usuarios = controller.obtenerTodosUsuarios(); // Obtener usuarios como Lista personalizada
+
+        // Iterar sobre la lista personalizada para cargar los elementos en el ListView
+        for (Usuario usuario : usuarios) {
+            listView.getItems().add(usuario);
+        }
+
         listView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
         Button btnSeleccionar = new Button("Editar");
@@ -366,7 +431,7 @@ public class ConsolaView {
     }
 
     private void mostrarArbolGenealogico() {
-        if (controller.obtenerUsuariosRaiz().isEmpty()) {
+        if (controller.obtenerUsuariosRaiz().estaVacio()) {
             mostrarMensaje("No hay usuarios raíz disponibles.");
             return;
         }
@@ -379,7 +444,7 @@ public class ConsolaView {
         lblTitulo.getStyleClass().add("titulo-seleccion-usuario");
 
         ListView<Usuario> listViewUsuarios = new ListView<>();
-        listViewUsuarios.getItems().addAll(controller.obtenerUsuariosRaiz());
+        listViewUsuarios.getItems().addAll(controller.obtenerUsuariosRaiz().toList());
         listViewUsuarios.getStyleClass().add("list-view-usuarios");
 
         Button btnSeleccionar = new Button("Seleccionar");
@@ -389,8 +454,8 @@ public class ConsolaView {
             if (usuarioRaiz != null) {
                 try {
                     // Mostrar el árbol genealógico del usuario seleccionado
-                    ArbolGenealogicoView arbolView = new ArbolGenealogicoView(controller, usuarioRaiz);
-                    Scene scene = new Scene(arbolView.getRoot(), 800, 600);
+                    ArbolGenealogicoView vista = new ArbolGenealogicoView(controller, usuarioRaiz, this::volverAlMenuPrincipal);
+                    Scene scene = new Scene(vista.getRoot(), 800, 600);
                     aplicarEstilos(scene);
 
                     primaryStage.setScene(scene);
@@ -404,7 +469,10 @@ public class ConsolaView {
             }
         });
 
-        Button btnVolver = crearBotonVolver();
+// Crear el botón "Volver" para regresar al menú principal
+        Button btnVolver = new Button("Volver");
+        btnVolver.getStyleClass().add("boton-volver");
+        btnVolver.setOnAction(e -> volverAlMenuPrincipal());
 
         contenedorSeleccion.getChildren().addAll(lblTitulo, listViewUsuarios, btnSeleccionar, btnVolver);
 
@@ -414,26 +482,19 @@ public class ConsolaView {
         primaryStage.setScene(escenaSeleccion);
     }
 
-    private void listarPendientesConfirmacion() {
-        Usuario usuarioActual = controller.getUsuarioActual();
-        if (usuarioActual == null) {
-            mostrarMensaje("Debe seleccionar un usuario para listar pendientes.");
-            return;
-        }
+    private void volverAlMenuPrincipal() {
+        mostrarMenu();
+    }
 
-        Lista<Usuario> pendientes = controller.obtenerPendientesDeConfirmacion(usuarioActual);
-        if (pendientes.estaVacio()) {
-            mostrarMensaje("No hay familiares pendientes de confirmación.");
-        } else {
-            System.out.println("Familiares pendientes de confirmación:");
-            for (Usuario pendiente : pendientes) {
-                System.out.println(pendiente.getNombreCompleto());
-            }
+    private void mostrarPendientesConfirmacion(Usuario usuario) {
+        Lista<Usuario> pendientes = controller.obtenerFamiliaresPendientes(usuario);
+        for (Usuario pendiente : pendientes) {
+            System.out.println("Familiar pendiente: " + pendiente.getNombreCompleto());
         }
     }
 
     private void listarFamiliaresPorEdad() {
-        if (controller.obtenerUsuariosRaiz().isEmpty()) {
+        if (controller.obtenerUsuariosRaiz().estaVacio()) {
             mostrarMensaje("No hay usuarios raíz disponibles.");
             return;
         }
@@ -452,10 +513,10 @@ public class ConsolaView {
         btnListar.getStyleClass().add("boton-listar");
         btnListar.setOnAction(e -> {
             int generacion = spGeneracion.getValue();
-            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().get(0);
-            List<Usuario> familiares = controller.obtenerFamiliaresPorEdad(usuarioRaiz, generacion);
+            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().cabeza().getDato(); // Obtener el dato del primer nodo
+            Lista<Usuario> familiares = controller.obtenerFamiliaresPorEdad(usuarioRaiz, generacion);
 
-            if (familiares.isEmpty()) {
+            if (familiares.estaVacio()) { // Verificar si la lista de familiares está vacía
                 mostrarMensaje("No hay familiares en la generación especificada.");
             } else {
                 VBox contenedorLista = new VBox(10);
@@ -466,7 +527,7 @@ public class ConsolaView {
                 lblFamiliares.getStyleClass().add("titulo-familiares-generacion");
 
                 ListView<String> listViewFamiliares = new ListView<>();
-                for (Usuario usuario : familiares) {
+                for (Usuario usuario : familiares) { // Iterar sobre la lista personalizada
                     listViewFamiliares.getItems().add(usuario.getNombreCompleto() + " - Edad: " + usuario.getEdad());
                 }
                 listViewFamiliares.getStyleClass().add("list-view-familiares");
@@ -491,7 +552,7 @@ public class ConsolaView {
     }
 
     private void buscarParentescoPorNombre() {
-        if (controller.obtenerUsuariosRaiz().isEmpty()) {
+        if (controller.obtenerUsuariosRaiz().estaVacio()) {
             mostrarMensaje("No hay usuarios raíz disponibles.");
             return;
         }
@@ -516,7 +577,11 @@ public class ConsolaView {
                 return;
             }
 
-            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().get(0);
+            if (controller.obtenerUsuariosRaiz().estaVacio()) {
+                mostrarMensaje("No hay usuarios raíz disponibles.");
+                return;
+            }
+            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().obtenerElementoEnPosicion(0);
             String parentesco = controller.buscarParentescoPorNombre(usuarioRaiz, nombre);
 
             mostrarMensaje("Parentesco: " + parentesco);
@@ -550,20 +615,19 @@ public class ConsolaView {
     }
 
     private void gestionarCasillaDeCorreo() {
-        // Obtener usuarios raíz disponibles
-        List<Usuario> usuariosRaiz = controller.obtenerUsuariosRaiz();
-        if (usuariosRaiz.isEmpty()) {
-            mostrarMensaje("No hay usuarios raíz disponibles.");
+        // Obtener todos los usuarios disponibles
+        Lista<Usuario> todosLosUsuarios = controller.obtenerTodosUsuarios();
+        if (todosLosUsuarios.estaVacio()) {
+            mostrarMensaje("No hay usuarios disponibles.");
             return;
         }
 
-        // Crear una nueva ventana para seleccionar un usuario
         Stage stageSeleccionarUsuario = new Stage();
-        stageSeleccionarUsuario.setTitle("Seleccionar Usuario para la Casilla de Correo");
+        stageSeleccionarUsuario.setTitle("Seleccionar Usuario para Casilla de Correo");
 
-        // ListView para mostrar los usuarios raíz disponibles
+        // ListView para mostrar los usuarios disponibles
         ListView<String> listViewUsuarios = new ListView<>();
-        for (Usuario usuario : usuariosRaiz) {
+        for (Usuario usuario : todosLosUsuarios) {
             listViewUsuarios.getItems().add(usuario.getNombreCompleto());
         }
 
@@ -572,74 +636,143 @@ public class ConsolaView {
         btnSeleccionarUsuario.setOnAction(event -> {
             int selectedIndex = listViewUsuarios.getSelectionModel().getSelectedIndex();
             if (selectedIndex >= 0) {
-                Usuario usuarioSeleccionado = usuariosRaiz.get(selectedIndex);
-                mostrarCasillaDeCorreo(usuarioSeleccionado); // Mostrar notificaciones del usuario seleccionado
+                // Obtener el usuario seleccionado
+                Usuario usuarioSeleccionado = todosLosUsuarios.obtenerElementoEnPosicion(selectedIndex);
+
+                // Actualizar el usuario actual en el controlador
+                controller.actualizarUsuarioActual(usuarioSeleccionado);
+
+                // Mostrar la casilla de correo para el usuario seleccionado
+                mostrarCasillaDeCorreo(usuarioSeleccionado);
+
+                // Cerrar la ventana de selección
                 stageSeleccionarUsuario.close();
             } else {
+                // Mostrar mensaje de error si no se seleccionó un usuario
                 mostrarMensaje("Debe seleccionar un usuario para continuar.");
             }
         });
 
-        // Diseño de la ventana de selección
+
         VBox vboxSeleccionar = new VBox(10, new Label("Seleccione un Usuario:"), listViewUsuarios, btnSeleccionarUsuario);
         vboxSeleccionar.setPadding(new Insets(20));
         vboxSeleccionar.setAlignment(Pos.CENTER);
 
-        // Configurar y mostrar la escena
         Scene sceneSeleccionar = new Scene(vboxSeleccionar, 400, 300);
         stageSeleccionarUsuario.setScene(sceneSeleccionar);
         stageSeleccionarUsuario.show();
     }
 
     private void mostrarCasillaDeCorreo(Usuario usuario) {
-        Stage stageCasilla = new Stage();
-        stageCasilla.setTitle("Casilla de Correo: " + usuario.getNombreCompleto());
+        Stage stage = new Stage();
+        stage.setTitle("Casilla de Correo: " + usuario.getNombreCompleto());
 
+        // ListView para mostrar los asuntos de los correos
         ListView<String> listViewCorreos = new ListView<>();
-        for (Correo correo : usuario.getBandejaDeEntrada()) {
-            listViewCorreos.getItems().add(correo.toString());
-        }
+        // Cargar los asuntos de los correos en la bandeja de entrada del usuario
+        usuario.getBandejaDeEntrada().forEach(correo -> listViewCorreos.getItems().add(correo.getAsunto()));
 
-        Button btnLeerCorreo = new Button("Leer Correo");
-        Button btnEliminarCorreo = new Button("Eliminar Correo");
-        Button btnCerrar = new Button("Cerrar");
+        // Área de texto para mostrar el contenido completo del correo seleccionado
+        TextArea areaContenidoCorreo = new TextArea();
+        areaContenidoCorreo.setEditable(false); // Solo lectura
+        areaContenidoCorreo.setWrapText(true);  // Ajustar texto automáticamente
+        areaContenidoCorreo.setPrefHeight(200);
 
-        btnLeerCorreo.setOnAction(e -> {
+        // Botón para marcar como leído
+        Button btnMarcarLeido = new Button("Marcar como leído");
+        btnMarcarLeido.setDisable(true); // Deshabilitado hasta que se seleccione un correo
+
+        // Botón para confirmar acciones específicas
+        Button btnConfirmar = new Button("Confirmar acción");
+        btnConfirmar.setDisable(true); // Deshabilitado hasta que se seleccione un correo relevante
+
+        // Listener para seleccionar correos
+        listViewCorreos.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            int selectedIndex = listViewCorreos.getSelectionModel().getSelectedIndex();
+            if (selectedIndex >= 0) {
+                Correo correoSeleccionado = usuario.getBandejaDeEntrada().obtenerElementoEnPosicion(selectedIndex);
+                areaContenidoCorreo.setText(correoSeleccionado.getMensaje()); // Mostrar el contenido del correo
+                btnMarcarLeido.setDisable(false); // Habilitar botón de marcar como leído
+
+                // Verificar si el correo requiere confirmación
+                String asuntoCorreo = correoSeleccionado.getAsunto().toLowerCase();
+                if (asuntoCorreo.contains("menor") || asuntoCorreo.contains("confirmación requerida") ||
+                        asuntoCorreo.contains("fallecimiento") || asuntoCorreo.contains("invitación")) {
+                    btnConfirmar.setDisable(false); // Habilitar el botón "Confirmar"
+                } else {
+                    btnConfirmar.setDisable(true); // Deshabilitar si no aplica
+                }
+            }
+        });
+
+        // Acción para marcar como leído
+        btnMarcarLeido.setOnAction(e -> {
             int selectedIndex = listViewCorreos.getSelectionModel().getSelectedIndex();
             if (selectedIndex >= 0) {
                 Correo correo = usuario.getBandejaDeEntrada().obtenerElementoEnPosicion(selectedIndex);
                 correo.marcarComoLeido();
-                mostrarMensaje("Correo leído: " + correo.getMensaje());
-                listViewCorreos.getItems().set(selectedIndex, correo.toString()); // Actualizar estado
-            } else {
-                mostrarMensaje("Seleccione un correo para leer.");
+                mostrarMensaje("Correo marcado como leído.");
+                listViewCorreos.getItems().set(selectedIndex, correo.getAsunto() + " (Leído)"); // Actualizar estado
             }
         });
 
-        btnEliminarCorreo.setOnAction(e -> {
+        // Acción para confirmar una notificación
+        btnConfirmar.setOnAction(e -> {
             int selectedIndex = listViewCorreos.getSelectionModel().getSelectedIndex();
             if (selectedIndex >= 0) {
-                usuario.getBandejaDeEntrada().removerEnPosicion(selectedIndex);
-                listViewCorreos.getItems().remove(selectedIndex);
-                mostrarMensaje("Correo eliminado.");
-            } else {
-                mostrarMensaje("Seleccione un correo para eliminar.");
+                Correo correo = usuario.getBandejaDeEntrada().obtenerElementoEnPosicion(selectedIndex);
+
+                // Paso 1: Imprime el contenido del correo seleccionado para depuración
+                System.out.println("Contenido del correo seleccionado: " + correo.getMensaje().toLowerCase());
+
+                boolean confirmacionExitosa = false;
+
+                String mensajeCorreo = correo.getMensaje();
+                String id = mensajeCorreo.substring(
+                        mensajeCorreo.indexOf("Id:") + 3,
+                        mensajeCorreo.indexOf(")", mensajeCorreo.indexOf("Id:"))
+                ).trim();
+                Usuario usuarioAConfirmar = controller.buscarUsuarioPorId(Integer.parseInt(id));
+
+                // Confirmar acciones según el mensaje del correo
+                String asuntoCorreo = correo.getAsunto().toLowerCase();
+                if (asuntoCorreo.contains("menor")) {
+                    confirmacionExitosa = controller.confirmarRegistroMenor(usuarioAConfirmar, usuario);
+                } else if (asuntoCorreo.contains("fallecimiento")) {
+                    confirmacionExitosa = controller.confirmarRegistroFallecido(usuarioAConfirmar, usuario);
+                } else if (asuntoCorreo.contains("invitación")) {
+                    confirmacionExitosa = controller.confirmarDatosPersona(usuario);
+                }
+
+                if (confirmacionExitosa) {
+                    mostrarMensaje("Acción confirmada correctamente.");
+                    correo.marcarComoLeido(); // Marcar el correo como leído
+                    listViewCorreos.getItems().set(selectedIndex, correo.getAsunto() + " (Procesado)"); // Actualizar estado
+                    btnConfirmar.setDisable(true); // Deshabilitar el botón de confirmar después de procesar
+                } else {
+                    mostrarMensaje("No se pudo procesar la acción. Verifica los datos.");
+                }
             }
         });
 
-        btnCerrar.setOnAction(e -> stageCasilla.close());
+        // Botón para cerrar la ventana
+        Button btnCerrar = new Button("Cerrar");
+        btnCerrar.setOnAction(e -> stage.close());
 
-        VBox vboxCasilla = new VBox(10, listViewCorreos, btnLeerCorreo, btnEliminarCorreo, btnCerrar);
-        vboxCasilla.setPadding(new Insets(20));
-        vboxCasilla.setAlignment(Pos.CENTER);
+        // Layout principal
+        VBox vbox = new VBox(10, new Label("Correos de " + usuario.getNombreCompleto()), listViewCorreos, areaContenidoCorreo, btnMarcarLeido, btnConfirmar, btnCerrar);
+        vbox.setPadding(new Insets(20));
+        vbox.setAlignment(Pos.CENTER);
 
-        Scene sceneCasilla = new Scene(vboxCasilla, 600, 400);
-        stageCasilla.setScene(sceneCasilla);
-        stageCasilla.show();
+        // Configuración de la escena
+        Scene scene = new Scene(vbox, 600, 600);
+        aplicarEstilos(scene); // Aplicar estilos personalizados
+        stage.setScene(scene);
+        stage.show();
     }
 
     private void seleccionarUsuarioActual() {
-        List<Usuario> usuariosRaiz = controller.obtenerUsuariosRaiz();
+        Lista<Usuario> usuariosRaiz = controller.obtenerUsuariosRaiz();
         Stage stage = new Stage();
         stage.setTitle("Seleccionar Usuario Actual");
 
@@ -652,7 +785,7 @@ public class ConsolaView {
         btnSeleccionar.setOnAction(event -> {
             int selectedIndex = listViewUsuarios.getSelectionModel().getSelectedIndex();
             if (selectedIndex >= 0) {
-                Usuario seleccionado = usuariosRaiz.get(selectedIndex);
+                Usuario seleccionado = usuariosRaiz.obtenerElementoEnPosicion(selectedIndex); // Reemplazo de get
                 controller.actualizarUsuarioActual(seleccionado);
                 mostrarMensaje("Usuario actual: " + seleccionado.getNombreCompleto());
                 stage.close();
@@ -690,5 +823,4 @@ public class ConsolaView {
         btnVolver.setOnAction(event -> mostrarMenu());
         return btnVolver;
     }
-
 }

@@ -151,6 +151,18 @@ public class Lista<T extends Comparable<T>> implements IListaDoble<T> {
         return false;
     }
 
+    public boolean contienePorEquals(T n) {
+        NodoDoble<T> actual = inicio;
+        while (actual != null) {
+            if (actual.getDato().equals(n)) { // Usar equals
+                return true;
+            }
+            actual = actual.getSiguiente();
+        }
+        return false;
+    }
+
+
     // Ordena una lista de usuarios por fecha de nacimiento
     public void ordenarListaPorFechaNacimiento(Lista<Usuario> lista) {
         lista.setCabeza(mergeSort(lista.cabeza()));

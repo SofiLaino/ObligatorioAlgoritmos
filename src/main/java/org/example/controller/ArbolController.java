@@ -30,6 +30,7 @@ public class ArbolController {
         return usuariosRaiz;
     }
 
+
     public Lista<Usuario> obtenerFamiliares(Usuario usuario) {
         // Verificar si el usuario no es nulo
         if (usuario == null) {
@@ -108,32 +109,50 @@ public class ArbolController {
 
     private Lista<Usuario> obtenerFamiliaresHastaGeneracion(Usuario usuario, int generacion, int nivelActual) {
         Lista<Usuario> familiares = new Lista<>();
-        if (usuario == null || nivelActual > generacion) return familiares;
+        if (usuario == null || nivelActual > generacion){
+            return familiares;
+        }
 
+        // Caso base: estamos en la generación deseada
         if (nivelActual == generacion) {
-            familiares.agregar(usuario);
+            // Verificar si el usuario ya está en la lista
+            if (!familiares.contienePorEquals(usuario)) {
+                familiares.agregar(usuario);
+            }
+            return familiares; // Retornar directamente los encontrados en esta generación
         } else {
             if (usuario.getPadre() != null) {
                 Lista<Usuario> padres = obtenerFamiliaresHastaGeneracion(usuario.getPadre(), generacion, nivelActual + 1);
                 for (Usuario padre : padres) {
-                    familiares.agregar(padre);
+                    // Verificar duplicados antes de agregar
+                    if (!familiares.contienePorEquals(padre)) {
+                        familiares.agregar(padre);
+                    }
                 }
             }
             if (usuario.getMadre() != null) {
                 Lista<Usuario> madres = obtenerFamiliaresHastaGeneracion(usuario.getMadre(), generacion, nivelActual + 1);
                 for (Usuario madre : madres) {
-                    familiares.agregar(madre);
+                    // Verificar duplicados antes de agregar
+                    if (!familiares.contienePorEquals(madre)) {
+                        familiares.agregar(madre);
+                    }
                 }
             }
             for (Usuario hijo : usuario.getHijos()) {
                 Lista<Usuario> hijos = obtenerFamiliaresHastaGeneracion(hijo, generacion, nivelActual + 1);
                 for (Usuario h : hijos) {
-                    familiares.agregar(h);
+                    // Verificar duplicados antes de agregar
+                    if (!familiares.contienePorEquals(h)) {
+                        familiares.agregar(h);
+                    }
                 }
             }
         }
+
         return familiares;
     }
+
 
     public Lista<Usuario> obtenerTodosUsuarios() {
         Lista<Usuario> usuarios = new Lista<>();

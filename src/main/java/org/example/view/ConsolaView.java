@@ -506,17 +506,29 @@ public class ConsolaView {
         Label lblTitulo = new Label("Listar Familiares por Generación y Edad");
         lblTitulo.getStyleClass().add("titulo-listar-familiares");
 
+        // ComboBox para seleccionar usuario raíz
+        Label lblUsuarioRaiz = new Label("Seleccione el usuario raíz:");
+        ComboBox<Usuario> comboUsuariosRaiz = new ComboBox<>();
+        comboUsuariosRaiz.getItems().addAll(controller.obtenerUsuariosRaiz().toList());
+        comboUsuariosRaiz.setPromptText("Seleccione un usuario raíz");
+
+        Label lblGeneracion = new Label("Ingrese la generación (0 para la generación actual):");
         Spinner<Integer> spGeneracion = new Spinner<>(0, 10, 0);
         spGeneracion.getStyleClass().add("spinner-generacion");
 
         Button btnListar = new Button("Listar");
         btnListar.getStyleClass().add("boton-listar");
         btnListar.setOnAction(e -> {
-            int generacion = spGeneracion.getValue();
-            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().cabeza().getDato(); // Obtener el dato del primer nodo
-            Lista<Usuario> familiares = controller.obtenerFamiliaresPorEdad(usuarioRaiz, generacion);
+            Usuario usuarioRaizSeleccionado = comboUsuariosRaiz.getValue();
+            if (usuarioRaizSeleccionado == null) {
+                mostrarMensaje("Debe seleccionar un usuario raíz.");
+                return;
+            }
 
-            if (familiares.estaVacio()) { // Verificar si la lista de familiares está vacía
+            int generacion = spGeneracion.getValue();
+            Lista<Usuario> familiares = controller.obtenerFamiliaresPorEdad(usuarioRaizSeleccionado, generacion);
+
+            if (familiares.estaVacio()) {
                 mostrarMensaje("No hay familiares en la generación especificada.");
             } else {
                 VBox contenedorLista = new VBox(10);
@@ -527,7 +539,7 @@ public class ConsolaView {
                 lblFamiliares.getStyleClass().add("titulo-familiares-generacion");
 
                 ListView<String> listViewFamiliares = new ListView<>();
-                for (Usuario usuario : familiares) { // Iterar sobre la lista personalizada
+                for (Usuario usuario : familiares) {
                     listViewFamiliares.getItems().add(usuario.getNombreCompleto() + " - Edad: " + usuario.getEdad());
                 }
                 listViewFamiliares.getStyleClass().add("list-view-familiares");
@@ -544,12 +556,13 @@ public class ConsolaView {
 
         Button btnVolver = crearBotonVolver();
 
-        contenedorPrincipal.getChildren().addAll(lblTitulo, new Label("Ingrese la generación (0 para la generación actual):"), spGeneracion, btnListar, btnVolver);
+        contenedorPrincipal.getChildren().addAll(lblTitulo, lblUsuarioRaiz, comboUsuariosRaiz, lblGeneracion, spGeneracion, btnListar, btnVolver);
 
         Scene escenaFamiliares = new Scene(contenedorPrincipal, 700, 500);
         aplicarEstilos(escenaFamiliares);
         primaryStage.setScene(escenaFamiliares);
     }
+
 
     private void buscarParentescoPorNombre() {
         if (controller.obtenerUsuariosRaiz().estaVacio()) {
@@ -564,6 +577,12 @@ public class ConsolaView {
         Label lblTitulo = new Label("Buscar Parentesco por Nombre");
         lblTitulo.getStyleClass().add("titulo-buscar-parentesco");
 
+        // ComboBox para seleccionar el usuario raíz
+        Label lblUsuarioRaiz = new Label("Seleccione el usuario raíz:");
+        ComboBox<Usuario> comboUsuariosRaiz = new ComboBox<>();
+        comboUsuariosRaiz.getItems().addAll(controller.obtenerUsuariosRaiz().toList());
+        comboUsuariosRaiz.setPromptText("Seleccione un usuario raíz");
+
         TextField txtNombre = new TextField();
         txtNombre.setPromptText("Ingrese el nombre completo");
         txtNombre.getStyleClass().add("text-field-buscar");
@@ -572,29 +591,31 @@ public class ConsolaView {
         btnBuscar.getStyleClass().add("boton-buscar");
         btnBuscar.setOnAction(e -> {
             String nombre = txtNombre.getText().trim();
+            Usuario usuarioRaizSeleccionado = comboUsuariosRaiz.getValue();
+
+            if (usuarioRaizSeleccionado == null) {
+                mostrarMensaje("Debe seleccionar un usuario raíz.");
+                return;
+            }
+
             if (nombre.isEmpty()) {
                 mostrarMensaje("Debe ingresar un nombre.");
                 return;
             }
 
-            if (controller.obtenerUsuariosRaiz().estaVacio()) {
-                mostrarMensaje("No hay usuarios raíz disponibles.");
-                return;
-            }
-            Usuario usuarioRaiz = controller.obtenerUsuariosRaiz().obtenerElementoEnPosicion(0);
-            String parentesco = controller.buscarParentescoPorNombre(usuarioRaiz, nombre);
-
+            String parentesco = controller.buscarParentescoPorNombre(usuarioRaizSeleccionado, nombre);
             mostrarMensaje("Parentesco: " + parentesco);
         });
 
         Button btnVolver = crearBotonVolver();
 
-        contenedorPrincipal.getChildren().addAll(lblTitulo, txtNombre, btnBuscar, btnVolver);
+        contenedorPrincipal.getChildren().addAll(lblTitulo, lblUsuarioRaiz, comboUsuariosRaiz, txtNombre, btnBuscar, btnVolver);
 
         Scene escenaBuscarParentesco = new Scene(contenedorPrincipal, 700, 400);
         aplicarEstilos(escenaBuscarParentesco);
         primaryStage.setScene(escenaBuscarParentesco);
     }
+
 
     private void aplicarEstilos(Scene scene) {
         try {
